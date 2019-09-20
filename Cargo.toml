@@ -1,0 +1,15 @@
+[package]
+name = "bignum"
+version = "0.1.0"
+authors = ["Franziskus Kiefer <franziskuskiefer@gmail.com>"]
+description = "Big number library in pure Rust"
+repository = "https://github.com/franziskuskiefer/bignum"
+keywords = ["bignum", "bigint"]
+license = "MPL-2.0"
+
+[lib]
+name = "bignum"
+path = "src/lib.rs"
+
+[dependencies]
+rand = "0.7"
