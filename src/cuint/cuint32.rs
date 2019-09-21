@@ -128,9 +128,7 @@ fn add_generic(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
             c = 1 + c;
             carry = false;
         }
-        if c > u32_max {
-            carry = true;
-        }
+        carry = u64::gte(&u32_max, &c) == 0;
         res.push((c & u32_max) as u32);
     }
 
@@ -140,9 +138,7 @@ fn add_generic(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
         let mut c = *d as u64;
         if carry {
             c = 1 + (*d as u64);
-            if c <= u32_max {
-                carry = false;
-            }
+            carry = u64::gte(&u32_max, &c) != 1;
         }
         res.push((c & u32_max) as u32);
     }
@@ -155,12 +151,12 @@ fn add_generic(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
 // ===================== TESTING ==============================
 
 extern crate rand;
-use self::rand::{thread_rng, Rng};
-const HEX_CHARS: [char; 16] = [
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-];
-
 fn random_hex_string(len: usize) -> String {
+    use self::rand::{thread_rng, Rng};
+    const HEX_CHARS: [char; 16] = [
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+    ];
+
     let mut res = "".to_string();
     for _ in 0..len {
         res.push(HEX_CHARS[thread_rng().gen_range(0, HEX_CHARS.len())]);
