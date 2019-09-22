@@ -34,7 +34,7 @@ impl FromStr for CUint32 {
         let mut r = CUint32::new();
         match r.encode(s) {
             Ok(_) => Ok(r),
-            Err(err) => Err(err)
+            Err(err) => Err(err),
         }
     }
 }
