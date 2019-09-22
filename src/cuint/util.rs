@@ -8,6 +8,7 @@
 
 // The main trait, implemented for u16, u32, u64, and u128
 // TODO: u16, u128
+// TODO: pass value (no &)
 pub(crate) trait Compare<T> {
     // Return 1 if a == b, 0 otherwise.
     fn equal(a: &T, b: &T) -> T;
@@ -17,7 +18,10 @@ pub(crate) trait Compare<T> {
 
     // Return (a + b, carry) if c == 1, (a, 0) if c == 0, and rubbish otherwise.
     // a + b MUST not overflow T.
-    fn cadd(a: &T, b: &T, c: &T) -> (T, T);
+    fn cadd(a: &T, b: &T, c: T) -> (T, T);
+
+    // Return (a + b, carry).
+    fn add_with_carry(a: T, b: T) -> (T, T);
 
     // Return (a * b lower 64 bits, a * b higher 64 bits) if c == 1, (a, 0) if c == 0, and rubbish otherwise.
     fn cmul(a: &T, b: &T, c: &T) -> (T, T);
@@ -43,9 +47,14 @@ impl Compare<u64> for u64 {
         (!(((i128::from(*a) - i128::from(*b)) >> 63) as u64)) >> 63
     }
     #[inline]
-    fn cadd(a: &u64, b: &u64, c: &u64) -> (u64, u64) {
+    fn cadd(a: &u64, b: &u64, c: u64) -> (u64, u64) {
         let c = (!c).overflowing_add(1).0;
         let r = a.overflowing_add(b & c);
+        (r.0, r.1 as u64)
+    }
+    #[inline]
+    fn add_with_carry(a: u64, b: u64) -> (u64, u64) {
+        let r = a.overflowing_add(b);
         (r.0, r.1 as u64)
     }
     #[inline]
@@ -79,8 +88,13 @@ impl Compare<u32> for u32 {
         (!(((i64::from(*a) - i64::from(*b)) >> 63) as u32)) >> 31
     }
     #[inline]
-    fn cadd(a: &u32, b: &u32, c: &u32) -> (u32, u32) {
+    fn cadd(a: &u32, b: &u32, c: u32) -> (u32, u32) {
         let r = a.overflowing_add(b & ((!c).overflowing_add(1).0));
+        (r.0, r.1 as u32)
+    }
+    #[inline]
+    fn add_with_carry(a: u32, b: u32) -> (u32, u32) {
+        let r = a.overflowing_add(b);
         (r.0, r.1 as u32)
     }
     #[inline]
@@ -159,7 +173,7 @@ fn test_cadd() {
     where
         T: PartialEq + std::fmt::Debug + Compare<T>,
     {
-        let x = T::cadd(&a, &b, &c);
+        let x = T::cadd(&a, &b, c);
         println!("{:?} + {:?} => {:?}", a, b, x);
         assert_eq!(expected, x);
     }

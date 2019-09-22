@@ -121,33 +121,26 @@ impl<'a> Add<&'a CUint32> for CUint32 {
 // TODO: make ct
 fn add_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
     let mut res = Vec::<u32>::new();
-    let mut carry = false;
+    let mut carry = 0u32;
+    let one = 1u32;
     let shorter_len = min(a.len(), b.len());
-    let u32_max = u64::from(std::u32::MAX);
 
     // Iterate over min(a.len(), b.len()) elements
     for (ai, bi) in a.iter().zip(b.iter()) {
-        let mut c = u64::from(*ai) + u64::from(*bi);
-        if carry {
-            c += 1;
-        }
-        carry = u64::gte(&u32_max, &c) == 0;
-        res.push((c & u32_max) as u32);
+        let tmp = u32::add_with_carry(*ai, *bi);
+        let c = u32::cadd(&tmp.0, &one, carry);
+        carry = tmp.1;
+        res.push(c.0);
     }
 
     // Sum up the carry and remaining values from the longer number.
     let longer = if a.len() > b.len() { a } else { b };
     for d in longer.iter().skip(shorter_len) {
-        let mut c = u64::from(*d);
-        if carry {
-            c = 1 + u64::from(*d);
-            carry = u64::gte(&u32_max, &c) != 1;
-        }
-        res.push((c & u32_max) as u32);
+        let c = u32::cadd(d, &one, carry);
+        carry = c.1;
+        res.push(c.0);
     }
-    if carry {
-        res.push(0x1u32);
-    }
+    res.push(carry);
     res
 }
 
