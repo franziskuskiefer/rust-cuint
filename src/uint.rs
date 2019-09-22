@@ -8,6 +8,7 @@ pub struct BigNum {
 pub trait Digits {
     fn capacity(&self) -> usize;
     fn len(&self) -> usize;
+    fn is_empty(&self) -> bool;
 }
 
 impl Digits for BigNum {
@@ -16,6 +17,9 @@ impl Digits for BigNum {
     }
     fn len(&self) -> usize {
         self.digits.len()
+    }
+    fn is_empty(&self) -> bool {
+        self.digits.len() == 0
     }
 }
 

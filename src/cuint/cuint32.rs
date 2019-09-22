@@ -11,33 +11,37 @@
 
 use std::cmp::min;
 use std::ops::Add;
+use std::str::FromStr;
 
 use cuint::util::*;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub struct CUint32 {
     digits: Vec<u32>,
 }
 
+#[derive(Debug)]
 pub enum CUintError {
     StringParsingError,
 }
 
 use cuint::cuint32::CUintError::StringParsingError;
 
+impl FromStr for CUint32 {
+    type Err = CUintError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut r = CUint32::new();
+        match r.encode(s) {
+            Ok(_) => Ok(r),
+            Err(err) => Err(err)
+        }
+    }
+}
+
 // Implement basic functionality for CUint32.
 // TODO: All this should be abstracted out to CUint.
 impl CUint32 {
-    // TODO: returns an "empty" number if an error occurs.
-    // TODO: return error?
-    pub fn from_str(s: &str) -> CUint32 {
-        let mut r = CUint32::new();
-        if r.encode(s).is_err() {
-            return CUint32::new();
-        }
-        r
-    }
-
     // TODO: return error?
     pub fn to_str(&self) -> String {
         match self.decode() {
@@ -46,8 +50,8 @@ impl CUint32 {
         }
     }
 
-    pub fn new() -> CUint32 {
-        Self { digits: vec![] }
+    pub fn new() -> Self {
+        Default::default()
     }
 
     fn clear(&mut self) {
@@ -69,7 +73,7 @@ impl CUint32 {
         // TODO: error prone, need to update len correctly
         while len > 0 {
             let cut = len - min(len, 8);
-            let mut num = match u32::from_str_radix(&x[cut..], 16) {
+            let num = match u32::from_str_radix(&x[cut..], 16) {
                 Ok(n) => n,
                 Err(_) => return Err(StringParsingError),
             };
@@ -115,18 +119,17 @@ impl<'a> Add<&'a CUint32> for CUint32 {
 // ===================== ALGORITHMS ===========================
 
 // TODO: make ct
-fn add_generic(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
+fn add_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
     let mut res = Vec::<u32>::new();
     let mut carry = false;
     let shorter_len = min(a.len(), b.len());
-    let u32_max = std::u32::MAX as u64;
+    let u32_max = u64::from(std::u32::MAX);
 
     // Iterate over min(a.len(), b.len()) elements
     for (ai, bi) in a.iter().zip(b.iter()) {
-        let mut c = (*ai as u64) + (*bi as u64);
+        let mut c = u64::from(*ai) + u64::from(*bi);
         if carry {
-            c = 1 + c;
-            carry = false;
+            c += 1;
         }
         carry = u64::gte(&u32_max, &c) == 0;
         res.push((c & u32_max) as u32);
@@ -135,9 +138,9 @@ fn add_generic(a: &Vec<u32>, b: &Vec<u32>) -> Vec<u32> {
     // Sum up the carry and remaining values from the longer number.
     let longer = if a.len() > b.len() { a } else { b };
     for d in longer.iter().skip(shorter_len) {
-        let mut c = *d as u64;
+        let mut c = u64::from(*d);
         if carry {
-            c = 1 + (*d as u64);
+            c = 1 + u64::from(*d);
             carry = u64::gte(&u32_max, &c) != 1;
         }
         res.push((c & u32_max) as u32);
@@ -170,7 +173,7 @@ fn random_hex_string(len: usize) -> String {
 #[test]
 fn test_encode_decode() {
     fn enc_dec(s: &str) {
-        let x = CUint32::from_str(s);
+        let x = CUint32::from_str(s).unwrap();
         let s_dec = x.to_str();
         println!("{:?} := {:x?} => {:?}", s, x, s_dec);
         assert_eq!(s, s_dec);
@@ -187,7 +190,7 @@ fn test_add() {
     use std::process::Command;
 
     fn test_add_core(a: &String, b: &String) {
-        let c = CUint32::from_str(&a) + &CUint32::from_str(&b);
+        let c = CUint32::from_str(&a).unwrap() + &CUint32::from_str(&b).unwrap();
         let expected = Command::new("python")
             .args(&["test_helper.py", &a, &b])
             .output()
