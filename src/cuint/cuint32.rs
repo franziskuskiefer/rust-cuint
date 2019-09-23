@@ -108,9 +108,21 @@ impl CUint32 {
     }
 }
 
+// ===================== Implement + ===========================
+
 impl<'a> Add<&'a CUint32> for CUint32 {
     type Output = CUint32;
 
+    #[inline]
+    fn add(self, other: &CUint32) -> CUint32 {
+        self.add_cuint32(other)
+    }
+}
+
+impl<'a, 'b> Add<&'b CUint32> for &'a CUint32 {
+    type Output = CUint32;
+
+    #[inline]
     fn add(self, other: &CUint32) -> CUint32 {
         self.add_cuint32(other)
     }
@@ -118,7 +130,6 @@ impl<'a> Add<&'a CUint32> for CUint32 {
 
 // ===================== ALGORITHMS ===========================
 
-// TODO: make ct
 fn add_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
     let mut res = Vec::<u32>::new();
     let mut carry = 0u32;
@@ -127,7 +138,7 @@ fn add_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
 
     // Iterate over min(a.len(), b.len()) elements
     for (ai, bi) in a.iter().zip(b.iter()) {
-        let tmp = u32::add_with_carry(*ai, *bi);
+        let tmp = u32::add_with_carry(ai, bi);
         let c = u32::cadd(&tmp.0, &one, carry);
         carry = tmp.1;
         res.push(c.0);
@@ -147,6 +158,7 @@ fn add_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
 // ===================== TESTING ==============================
 
 extern crate rand;
+#[allow(dead_code)]
 fn random_hex_string(len: usize) -> String {
     use self::rand::{thread_rng, Rng};
     const HEX_CHARS: [char; 16] = [
@@ -183,7 +195,9 @@ fn test_add() {
     use std::process::Command;
 
     fn test_add_core(a: &String, b: &String) {
-        let c = CUint32::from_str(&a).unwrap() + &CUint32::from_str(&b).unwrap();
+        let x = CUint32::from_str(&a).unwrap();
+        let y = CUint32::from_str(&b).unwrap();
+        let c = &x + &y;
         let expected = Command::new("python")
             .args(&["test_helper.py", &a, &b])
             .output()

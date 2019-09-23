@@ -21,7 +21,7 @@ pub(crate) trait Compare<T> {
     fn cadd(a: &T, b: &T, c: T) -> (T, T);
 
     // Return (a + b, carry).
-    fn add_with_carry(a: T, b: T) -> (T, T);
+    fn add_with_carry(a: &T, b: &T) -> (T, T);
 
     // Return (a * b lower 64 bits, a * b higher 64 bits) if c == 1, (a, 0) if c == 0, and rubbish otherwise.
     fn cmul(a: &T, b: &T, c: &T) -> (T, T);
@@ -53,8 +53,8 @@ impl Compare<u64> for u64 {
         (r.0, r.1 as u64)
     }
     #[inline]
-    fn add_with_carry(a: u64, b: u64) -> (u64, u64) {
-        let r = a.overflowing_add(b);
+    fn add_with_carry(a: &u64, b: &u64) -> (u64, u64) {
+        let r = a.overflowing_add(*b);
         (r.0, r.1 as u64)
     }
     #[inline]
@@ -93,8 +93,8 @@ impl Compare<u32> for u32 {
         (r.0, r.1 as u32)
     }
     #[inline]
-    fn add_with_carry(a: u32, b: u32) -> (u32, u32) {
-        let r = a.overflowing_add(b);
+    fn add_with_carry(a: &u32, b: &u32) -> (u32, u32) {
+        let r = a.overflowing_add(*b);
         (r.0, r.1 as u32)
     }
     #[inline]
@@ -168,37 +168,42 @@ fn test_gte() {
 }
 
 #[test]
-fn test_cadd() {
-    fn test_inner<T>(a: T, b: T, c: T, expected: (T, T))
+fn test_add() {
+    fn test_inner<T>(a: T, b: T, c: T, expected_c: (T, T), expected: (T, T))
     where
         T: PartialEq + std::fmt::Debug + Compare<T>,
     {
         let x = T::cadd(&a, &b, c);
+        let (r1, r2) = T::add_with_carry(&a, &b);
         println!("{:?} + {:?} => {:?}", a, b, x);
-        assert_eq!(expected, x);
+        println!("{:?} + {:?} => {:?} | {:?}", a, b, r2, r1);
+        assert_eq!(expected_c, x);
+        assert_eq!(expected, (r1, r2));
     }
-    test_inner(0u32, 0u32, 0u32, (0u32, 0u32));
-    test_inner(0u32, 0u32, 1u32, (0u32, 0u32));
-    test_inner(456u32, 123u32, 0u32, (456u32, 0u32));
-    test_inner(456u32, 123u32, 1u32, (579u32, 0u32));
-    test_inner(0xFFFFFFFFu32, 0xFFFFFFFFu32, 0u32, (0xFFFFFFFFu32, 0u32));
-    test_inner(0xFFFFFFFFu32, 0xFFFFFFFFu32, 1u32, (0xFFFFFFFEu32, 1u32));
+    test_inner(0u32, 0u32, 0u32, (0u32, 0u32), (0u32, 0u32));
+    test_inner(0u32, 0u32, 1u32, (0u32, 0u32), (0u32, 0u32));
+    test_inner(456u32, 123u32, 0u32, (456u32, 0u32), (579u32, 0u32));
+    test_inner(456u32, 123u32, 1u32, (579u32, 0u32), (579u32, 0u32));
+    test_inner(0xFFFFFFFFu32, 0xFFFFFFFFu32, 0u32, (0xFFFFFFFFu32, 0u32), (0xFFFFFFFEu32, 1u32));
+    test_inner(0xFFFFFFFFu32, 0xFFFFFFFFu32, 1u32, (0xFFFFFFFEu32, 1u32), (0xFFFFFFFEu32, 1u32));
 
-    test_inner(0u64, 0u64, 0u64, (0u64, 0u64));
-    test_inner(0u64, 0u64, 1u64, (0u64, 0u64));
-    test_inner(456u64, 123u64, 0u64, (456u64, 0u64));
-    test_inner(456u64, 123u64, 1u64, (579u64, 0u64));
+    test_inner(0u64, 0u64, 0u64, (0u64, 0u64), (0u64, 0u64));
+    test_inner(0u64, 0u64, 1u64, (0u64, 0u64), (0u64, 0u64));
+    test_inner(456u64, 123u64, 0u64, (456u64, 0u64), (579u64, 0u64));
+    test_inner(456u64, 123u64, 1u64, (579u64, 0u64), (579u64, 0u64));
     test_inner(
         0xFFFFFFFFFFFFFFFFu64,
         0xFFFFFFFFFFFFFFFFu64,
         0u64,
         (0xFFFFFFFFFFFFFFFFu64, 0u64),
+        (0xFFFFFFFFFFFFFFFEu64, 1u64)
     );
     test_inner(
         0xFFFFFFFFFFFFFFFFu64,
         0xFFFFFFFFFFFFFFFFu64,
         1u64,
         (0xFFFFFFFFFFFFFFFEu64, 1u64),
+        (0xFFFFFFFFFFFFFFFEu64, 1u64)
     );
 }
 
