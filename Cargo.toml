@@ -1,14 +1,14 @@
 [package]
-name = "bignum"
+name = "cuint"
 version = "0.1.0"
 authors = ["Franziskus Kiefer <franziskuskiefer@gmail.com>"]
-description = "Big number library in pure Rust"
-repository = "https://github.com/franziskuskiefer/bignum"
-keywords = ["bignum", "bigint"]
+description = "Constant time big number library in pure Rust"
+repository = "https://github.com/franziskuskiefer/rust-cuint"
+keywords = ["bignum", "bigint", "crypto"]
 license = "MPL-2.0"
 
 [lib]
-name = "bignum"
+name = "cuint"
 path = "src/lib.rs"
 
 [dependencies]
