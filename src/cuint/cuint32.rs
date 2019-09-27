@@ -111,13 +111,13 @@ impl CUint32 {
     /// Add two CUint32.
     /// This uses a generic, slow addition algorithm at this time.
     ///
-    /// ## Example:
+    /// # Example:
     /// ```rust,ignore
     ///     let a = CUint32::from_str("0x123");
     ///     let b = CUint32::from_str("0x456");
     ///     let c = a.add_cuint32(&b);
     /// ```
-    pub fn add_cuint32(&self, other: &CUint32) -> CUint32 {
+    fn add_cuint32(&self, other: &CUint32) -> CUint32 {
         let res = add_generic(&self.digits, &other.digits);
         Self { digits: res }
     }
@@ -125,15 +125,25 @@ impl CUint32 {
     /// Multiply two CUint32.
     /// This uses a generic, slow multiplication algorithm at this time.
     ///
-    /// ## Example:
+    /// # Example:
     /// ```rust,ignore
     ///     let a = CUint32::from_str("0x123");
     ///     let b = CUint32::from_str("0x456");
     ///     let c = a.mul_cuint32(&b);
     /// ```
-    pub fn mul_cuint32(&self, other: &CUint32) -> CUint32 {
+    fn mul_cuint32(&self, other: &CUint32) -> CUint32 {
         let res = mul_generic(&self.digits, &other.digits);
         Self { digits: res }
+    }
+
+    // FIXME: implement mod_pow
+    pub fn mod_pow(&self, exp: &CUint32, modulus: &CUint32) -> CUint32 {
+        unimplemented!();
+    }
+
+    // FIXME: implement mul_pow
+    pub fn mod_mul(&self, other: &CUint32, modulus: &CUint32) -> CUint32 {
+        unimplemented!();
     }
 }
 
@@ -205,7 +215,6 @@ fn add_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
     res
 }
 
-// TODO: make ct
 /// A very generic way of multiplying two vectors of u32.
 fn mul_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
     let mut res = vec![0u32; a.len() + b.len()];
@@ -281,9 +290,11 @@ fn get_expected(op: &'static str, a: &String, b: &String) -> String {
         .args(&["test_helper.py", op, &a, &b])
         .output()
         .expect("failed to execute python test helper");
-    String::from_utf8_lossy(&expected.stdout)
+    let expected = String::from_utf8_lossy(&expected.stdout)
         .replace("\n", "")
-        .replace("\r", "")
+        .replace("\r", "");
+    // Python2 appends an L.
+    expected.replace("L", "")
 }
 
 #[test]

@@ -7,7 +7,7 @@
 //! TODO: rotate etc.
 
 // TODO: u16, u128
-// TODO: pass value (no &)
+// TODO: pass values (no &)?
 /// The main trait, implemented for u16, u32, u64, and u128
 pub(crate) trait CTimeOperations<T> {
     /// Return 1 if a == b, 0 otherwise.
