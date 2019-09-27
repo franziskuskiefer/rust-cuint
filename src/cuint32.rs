@@ -9,7 +9,8 @@
 //! So `0x123456789abcdef` would be stored as `[0x89abcdef, 0x1234567]`.
 //!
 //! TODO: implement efficient algorithms (start with the sorts of Karatsuba and improve from there).
-//!
+//! TODO: add fixed-length versions (no Vec, dynamic allocations)
+//! 
 
 use std::cmp::min;
 use std::ops::{Add, Mul};

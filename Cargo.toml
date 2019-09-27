@@ -12,6 +12,8 @@ name = "cuint"
 path = "src/lib.rs"
 
 [dependencies]
-rand = "0.7" # TODO: move to dev dependencies
-time = "0.1.42" # TODO: move to dev dependencies
+
+[dev-dependencies]
+rand = "0.7"
+time = "0.1"
 
