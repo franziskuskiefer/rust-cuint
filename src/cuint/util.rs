@@ -6,7 +6,7 @@
 //!
 //! TODO: rotate etc.
 
-// TODO: u16, u128
+// TODO: u128
 // TODO: pass values (no &)?
 /// The main trait, implemented for u16, u32, u64, and u128
 pub(crate) trait CTimeOperations<T> {
@@ -18,7 +18,7 @@ pub(crate) trait CTimeOperations<T> {
 
     /// Return (a + b, carry) if c == 1, (a, 0) if c == 0, and rubbish otherwise.
     /// a + b MUST not overflow T.
-    fn cadd(a: &T, b: &T, c: T) -> (T, T);
+    fn cadd(a: &T, b: &T, c: &T) -> (T, T);
 
     /// Return (a + b, carry).
     fn add_with_carry(a: &T, b: &T) -> (T, T);
@@ -52,7 +52,7 @@ impl CTimeOperations<u64> for u64 {
     }
 
     #[inline]
-    fn cadd(a: &u64, b: &u64, c: u64) -> (u64, u64) {
+    fn cadd(a: &u64, b: &u64, c: &u64) -> (u64, u64) {
         let c = (!c).overflowing_add(1).0;
         let r = a.overflowing_add(b & c);
         (r.0, r.1 as u64)
@@ -104,7 +104,7 @@ impl CTimeOperations<u32> for u32 {
     }
 
     #[inline]
-    fn cadd(a: &u32, b: &u32, c: u32) -> (u32, u32) {
+    fn cadd(a: &u32, b: &u32, c: &u32) -> (u32, u32) {
         let r = a.overflowing_add(b & ((!c).overflowing_add(1).0));
         (r.0, r.1 as u32)
     }
@@ -137,6 +137,56 @@ impl CTimeOperations<u32> for u32 {
     }
 }
 
+impl CTimeOperations<u16> for u16 {
+    #[inline]
+    fn equal(a: &u16, b: &u16) -> u16 {
+        let mut x = !(a ^ b);
+        x = x & (x << 8);
+        x = x & (x << 4);
+        x = x & (x << 2);
+        x = x & (x << 1);
+        x >> 15
+    }
+
+    #[inline]
+    fn gte(a: &u16, b: &u16) -> u16 {
+        (!(((i32::from(*a) - i32::from(*b)) >> 31) as u16)) >> 15
+    }
+
+    #[inline]
+    fn cadd(a: &u16, b: &u16, c: &u16) -> (u16, u16) {
+        let r = a.overflowing_add(b & ((!c).overflowing_add(1).0));
+        (r.0, r.1 as u16)
+    }
+
+    #[inline]
+    fn add_with_carry(a: &u16, b: &u16) -> (u16, u16) {
+        let r = a.overflowing_add(*b);
+        (r.0, r.1 as u16)
+    }
+
+    #[inline]
+    fn cmul(a: &u16, b: &u16, c: &u16) -> (u16, u16) {
+        let mask = (!u32::from(*c)).overflowing_add(1).0;
+        let r = (u32::from(*a) * u32::from(*b)) & mask;
+        let r = (r & mask) ^ (u32::from(*a) & !mask);
+        (r as u16, (r >> 16) as u16)
+    }
+
+    #[inline]
+    fn mul_with_carry(a: &u16, b: &u16) -> (u16, u16) {
+        let r = u32::from(*a) * u32::from(*b);
+        (r as u16, (r >> 16) as u16)
+    }
+
+    #[inline]
+    fn cswap(a: &u16, b: &u16, c: &u16) -> (u16, u16) {
+        let c = (!c).overflowing_add(1).0;
+        let mask = (a ^ b) & c;
+        (a ^ mask, b ^ mask)
+    }
+}
+
 // ===================== TESTS ========================
 #[test]
 fn test_equal() {
@@ -148,6 +198,14 @@ fn test_equal() {
         println!("{:?} == {:?}: {:?}", a, b, x);
         assert_eq!(expected, x);
     }
+    test_inner(0u16, 0u16, 1u16);
+    test_inner(123u16, 123u16, 1u16);
+    test_inner(123u16, 124u16, 0u16);
+    test_inner(124u16, 123u16, 0u16);
+    test_inner(0xFFFFu16, 0xFFFFu16, 1u16);
+    test_inner(0xFFFFu16, 0xFFFEu16, 0u16);
+    test_inner(0xEFFFu16, 0xFFFFu16, 0u16);
+
     test_inner(0u32, 0u32, 1u32);
     test_inner(123u32, 123u32, 1u32);
     test_inner(123u32, 124u32, 0u32);
@@ -175,6 +233,14 @@ fn test_gte() {
         println!("{:?} >= {:?}: {:?}", a, b, x);
         assert_eq!(expected, x);
     }
+    test_inner(0u16, 0u16, 1u16);
+    test_inner(123u16, 123u16, 1u16);
+    test_inner(123u16, 124u16, 0u16);
+    test_inner(124u16, 123u16, 1u16);
+    test_inner(0xFFFFu16, 0xFFFFu16, 1u16);
+    test_inner(0xFFFFu16, 0xFFFEu16, 1u16);
+    test_inner(0xEFFFu16, 0xFFFFu16, 0u16);
+
     test_inner(0u32, 0u32, 1u32);
     test_inner(123u32, 123u32, 1u32);
     test_inner(123u32, 124u32, 0u32);
@@ -198,13 +264,32 @@ fn test_add() {
     where
         T: PartialEq + std::fmt::Debug + CTimeOperations<T>,
     {
-        let x = T::cadd(&a, &b, c);
+        let x = T::cadd(&a, &b, &c);
         let (r1, r2) = T::add_with_carry(&a, &b);
         println!("{:x?} + {:x?} => {:x?}", a, b, x);
         println!("{:x?} + {:x?} => {:x?} | {:x?}", a, b, r2, r1);
         assert_eq!(expected_c, x);
         assert_eq!(expected, (r1, r2));
     }
+    test_inner(0u16, 0u16, 0u16, (0u16, 0u16), (0u16, 0u16));
+    test_inner(0u16, 0u16, 1u16, (0u16, 0u16), (0u16, 0u16));
+    test_inner(456u16, 123u16, 0u16, (456u16, 0u16), (579u16, 0u16));
+    test_inner(456u16, 123u16, 1u16, (579u16, 0u16), (579u16, 0u16));
+    test_inner(
+        0xFFFFu16,
+        0xFFFFu16,
+        0u16,
+        (0xFFFFu16, 0u16),
+        (0xFFFEu16, 1u16),
+    );
+    test_inner(
+        0xFFFFu16,
+        0xFFFFu16,
+        1u16,
+        (0xFFFEu16, 1u16),
+        (0xFFFEu16, 1u16),
+    );
+
     test_inner(0u32, 0u32, 0u32, (0u32, 0u32), (0u32, 0u32));
     test_inner(0u32, 0u32, 1u32, (0u32, 0u32), (0u32, 0u32));
     test_inner(456u32, 123u32, 0u32, (456u32, 0u32), (579u32, 0u32));
@@ -265,6 +350,25 @@ fn test_cmul() {
         assert_eq!(expected_c, x);
         assert_eq!(expected, (r1, r2));
     }
+    test_inner(0u16, 0u16, 0u16, (0u16, 0u16), (0u16, 0u16));
+    test_inner(0u16, 0u16, 1u16, (0u16, 0u16), (0u16, 0u16));
+    test_inner(456u16, 123u16, 0u16, (456u16, 0u16), (0xdb18u16, 0u16));
+    test_inner(456u16, 123u16, 1u16, (0xdb18u16, 0u16), (0xdb18u16, 0u16));
+    test_inner(
+        0xFFFFu16,
+        0xFFFFu16,
+        0u16,
+        (0xFFFFu16, 0u16),
+        (0x0001u16, 0xfffeu16),
+    );
+    test_inner(
+        0xFFFFu16,
+        0xFFFFu16,
+        1u16,
+        (0x0001u16, 0xfffeu16),
+        (0x0001u16, 0xfffeu16),
+    );
+
     test_inner(0u32, 0u32, 0u32, (0u32, 0u32), (0u32, 0u32));
     test_inner(0u32, 0u32, 1u32, (0u32, 0u32), (0u32, 0u32));
     test_inner(456u32, 123u32, 0u32, (456u32, 0u32), (0xdb18u32, 0u32));
@@ -314,6 +418,14 @@ fn test_cswap() {
         println!("{:?} + {:?} => {:?}", a, b, x);
         assert_eq!(expected, x);
     }
+    test_inner(0u16, 0u16, 0u16, (0u16, 0u16));
+    test_inner(0u16, 0u16, 1u16, (0u16, 0u16));
+    test_inner(456u16, 123u16, 0u16, (456u16, 123u16));
+    test_inner(456u16, 123u16, 1u16, (123u16, 456u16));
+    test_inner(0xFFFFu16, 0xFFFFu16, 0u16, (0xFFFFu16, 0xFFFFu16));
+    test_inner(0xFFFFu16, 0xFFFFu16, 1u16, (0xFFFFu16, 0xFFFFu16));
+    test_inner(0xFFFFu16, 0x1234u16, 1u16, (0x1234u16, 0xFFFFu16));
+
     test_inner(0u32, 0u32, 0u32, (0u32, 0u32));
     test_inner(0u32, 0u32, 1u32, (0u32, 0u32));
     test_inner(456u32, 123u32, 0u32, (456u32, 123u32));
