@@ -1,8 +1,8 @@
 extern crate cuint;
 extern crate time;
 
-use time::PreciseTime;
 use cuint::util::CTimeOperations;
+use time::PreciseTime;
 
 #[test]
 fn test_equal() {
@@ -292,7 +292,6 @@ fn test_cswap() {
 #[test]
 fn test_overflowing_add_timings() {
     fn overflowing_add_time_inner(x: u32, y: u32) -> i64 {
-
         let start = PreciseTime::now();
         let _z = x.overflowing_add(y);
         let end = PreciseTime::now();

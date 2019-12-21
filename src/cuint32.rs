@@ -10,33 +10,21 @@
 //!
 //! TODO: implement efficient algorithms (start with the sorts of Karatsuba and improve from there).
 //! TODO: add fixed-length versions (no Vec, dynamic allocations)
-//! 
+//!
 
 use std::cmp::min;
 use std::ops::{Add, Mul};
 use std::str::FromStr;
 
+use base::*;
 use util::*;
 
-/// The struct holding the u32 vector representing the unsigned integer.
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
-pub struct CUint32 {
-    digits: Vec<u32>,
-}
-
-/// Errors specific to CUint32 operations like encoding, decoding, and arithmetic errors.
-#[derive(Debug)]
-pub enum CUintError {
-    StringParsingError,
-}
-
-use cuint32::CUintError::StringParsingError;
-
-impl FromStr for CUint32 {
-    type Err = CUintError;
+// ===============================
+impl FromStr for Uint<u32> {
+    type Err = UintError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut r = CUint32::new();
+        let mut r = Uint::<u32>::default();
         match r.encode(s) {
             Ok(_) => Ok(r),
             Err(err) => Err(err),
@@ -44,33 +32,13 @@ impl FromStr for CUint32 {
     }
 }
 
-// TODO: All this should be abstracted out to CUint.
-/// Implement basic functionality for CUint32.
-impl CUint32 {
-    // TODO: return error?
-    pub fn to_str(&self) -> String {
-        match self.decode() {
-            Ok(s) => s,
-            Err(_) => "".to_string(),
-        }
-    }
-
-    /// Get a new, empty CUint32 == 0.
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    /// Clear a CUint32, i.e. this CUint32 == 0 after this operation.
-    fn clear(&mut self) {
-        self.digits.clear();
-    }
-
+impl UintTrait for Uint<u32> {
     // TODO: not only hex?
-    /// Read a hex string into a CUint32.
+    /// Read a hex string into a Uint<u32>.
     /// The string MUST be of the form "0xdeadbeef".
-    fn encode(&mut self, s: &str) -> Result<&CUint32, CUintError> {
+    fn encode(&mut self, s: &str) -> Result<&Uint<u32>, UintError> {
         if !s.starts_with("0x") {
-            return Err(StringParsingError);
+            return Err(UintError::StringParsingError);
         }
 
         let mut x = &s[2..];
@@ -82,7 +50,7 @@ impl CUint32 {
             let cut = len - min(len, 8);
             let num = match u32::from_str_radix(&x[cut..], 16) {
                 Ok(n) => n,
-                Err(_) => return Err(StringParsingError),
+                Err(_) => return Err(UintError::StringParsingError),
             };
             self.digits.push(num);
 
@@ -94,8 +62,8 @@ impl CUint32 {
         Ok(self)
     }
 
-    /// Get a CUint32 as a hex string of the form `0xdeadbeef`.
-    pub fn decode(&self) -> Result<String, CUintError> {
+    /// Get a Uint<u32> as a hex string of the form `0xdeadbeef`.
+    fn decode(&self) -> Result<String, UintError> {
         let mut res: String = String::from("");
         for i in (0..self.digits.len()).rev() {
             let d = &self.digits[i];
@@ -109,86 +77,52 @@ impl CUint32 {
         Ok(start)
     }
 
-    /// Add two CUint32.
+    /// Add two Uint<u32>.
     /// This uses a generic, slow addition algorithm at this time.
     ///
     /// # Example:
     /// ```rust,ignore
-    ///     let a = CUint32::from_str("0x123");
-    ///     let b = CUint32::from_str("0x456");
+    ///     let a = Uint::<u32>::from_str("0x123");
+    ///     let b = Uint::<u32>::from_str("0x456");
     ///     let c = a.add_cuint32(&b);
     /// ```
-    fn add_cuint32(&self, other: &CUint32) -> CUint32 {
+    fn add_uint(&self, other: &Self) -> Self {
         let res = add_generic(&self.digits, &other.digits);
         Self { digits: res }
     }
 
-    /// Multiply two CUint32.
+    /// Multiply two Uint<u32>.
     /// This uses a generic, slow multiplication algorithm at this time.
     ///
     /// # Example:
     /// ```rust,ignore
-    ///     let a = CUint32::from_str("0x123");
-    ///     let b = CUint32::from_str("0x456");
+    ///     let a = Uint::<u32>::from_str("0x123");
+    ///     let b = Uint::add_generic(a: &[u32], b: &[u32])<u32>::from_str("0x456");
     ///     let c = a.mul_cuint32(&b);
     /// ```
-    fn mul_cuint32(&self, other: &CUint32) -> CUint32 {
+    fn mul_uint(&self, other: &Self) -> Self {
         let res = mul_generic(&self.digits, &other.digits);
         Self { digits: res }
     }
 
     // FIXME: implement mod_pow
-    pub fn mod_pow(&self, exp: &CUint32, modulus: &CUint32) -> CUint32 {
+    fn mod_pow(&self, exp: &Self, modulus: &Self) -> Self {
         unimplemented!();
     }
 
     // FIXME: implement mul_pow
-    pub fn mod_mul(&self, other: &CUint32, modulus: &CUint32) -> CUint32 {
+    fn mod_mul(&self, other: &Self, modulus: &Self) -> Self {
         unimplemented!();
     }
-}
 
-// ===================== Implement + ===========================
-
-impl<'a> Add<&'a CUint32> for CUint32 {
-    type Output = CUint32;
-
-    #[inline]
-    fn add(self, other: &CUint32) -> CUint32 {
-        self.add_cuint32(other)
+    /// Clear a Uint<u32>, i.e. this Uint<u32> == 0 after this operation.
+    fn clear(&mut self) {
+        self.digits.clear();
     }
 }
 
-impl<'a, 'b> Add<&'b CUint32> for &'a CUint32 {
-    type Output = CUint32;
-
-    #[inline]
-    fn add(self, other: &CUint32) -> CUint32 {
-        self.add_cuint32(other)
-    }
-}
-
-// ===================== Implement * ===========================
-// let c = &a * &b;
-// let c = a * &b;
-
-impl<'a> Mul<&'a CUint32> for CUint32 {
-    type Output = CUint32;
-
-    #[inline]
-    fn mul(self, other: &CUint32) -> CUint32 {
-        self.mul_cuint32(other)
-    }
-}
-
-impl<'a, 'b> Mul<&'b CUint32> for &'a CUint32 {
-    type Output = CUint32;
-
-    #[inline]
-    fn mul(self, other: &CUint32) -> CUint32 {
-        self.mul_cuint32(other)
-    }
-}
+impl_add!(Uint<u32>);
+impl_mul!(Uint<u32>);
 
 // ===================== ALGORITHMS ===========================
 

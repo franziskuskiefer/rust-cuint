@@ -1,9 +1,10 @@
 extern crate cuint;
 extern crate rand;
 
-use std::str::FromStr;
 use rand::{thread_rng, Rng};
-use cuint::cuint32::*;
+use std::str::FromStr;
+// Trait with all the functions.
+use cuint::base::{UintTrait, Uint};
 
 #[allow(dead_code)]
 fn random_hex_string(len: usize) -> String {
@@ -37,7 +38,7 @@ fn get_expected(op: &'static str, a: &String, b: &String) -> String {
 #[test]
 fn test_encode_decode() {
     fn enc_dec(s: &str) {
-        let x = CUint32::from_str(s).unwrap();
+        let x = Uint::<u32>::from_str(s).unwrap();
         let s_dec = x.to_str();
         println!("{:?} := {:x?} => {:?}", s, x, s_dec);
         assert_eq!(s, s_dec);
@@ -52,8 +53,8 @@ fn test_encode_decode() {
 #[test]
 fn test_add() {
     fn test_add_core(a: &String, b: &String) {
-        let x = CUint32::from_str(&a).unwrap();
-        let y = CUint32::from_str(&b).unwrap();
+        let x = Uint::<u32>::from_str(&a).unwrap();
+        let y = Uint::<u32>::from_str(&b).unwrap();
         let c = &x + &y;
         let expected = get_expected("add", a, b);
         println!("{:?} + {:?} = {:?}", a, b, expected);
@@ -106,8 +107,8 @@ fn test_add() {
 fn test_mul() {
     // TODO: move out and re-use.
     fn test_mul_core(a: &String, b: &String) {
-        let x = CUint32::from_str(&a).unwrap();
-        let y = CUint32::from_str(&b).unwrap();
+        let x = Uint::<u32>::from_str(&a).unwrap();
+        let y = Uint::<u32>::from_str(&b).unwrap();
         let c = &x * &y;
         let expected = get_expected("mul", a, b);
         println!("{:?} * {:?} = {:?}", a, b, expected);

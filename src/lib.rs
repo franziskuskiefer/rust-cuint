@@ -4,5 +4,7 @@
 //! starting out with some rather slow and generic ones.
 //!
 
-pub mod util;
+#[macro_use]
+pub mod base;
 pub mod cuint32;
+pub mod util;
