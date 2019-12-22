@@ -1,10 +1,11 @@
+#[macro_use]
 extern crate cuint;
 extern crate rand;
 
 use rand::{thread_rng, Rng};
 use std::str::FromStr;
 // Trait with all the functions.
-use cuint::base::{UintTrait, Uint};
+use cuint::base::{Array, CUint, Uint, UintTrait};
 
 #[allow(dead_code)]
 fn random_hex_string(len: usize) -> String {
@@ -160,4 +161,10 @@ fn test_mul() {
         let b = random_hex_string(i);
         test_mul_core(&a, &b);
     }
+}
+
+#[test]
+fn test_cuint32() {
+    create_cuint!(CUint32_256, 256, u32);
+    let cuint32_256 = CUint32_256::default();
 }

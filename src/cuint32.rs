@@ -19,7 +19,8 @@ use std::str::FromStr;
 use base::*;
 use util::*;
 
-// ===============================
+// ===================== Uint<32> implmementaiton ===============
+
 impl FromStr for Uint<u32> {
     type Err = UintError;
 
@@ -32,6 +33,8 @@ impl FromStr for Uint<u32> {
     }
 }
 
+/// Implement Uint<32> with u32 limbs
+/// Note that operations are constant time but the digits are heap allocated.
 impl UintTrait for Uint<u32> {
     // TODO: not only hex?
     /// Read a hex string into a Uint<u32>.

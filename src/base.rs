@@ -108,11 +108,21 @@ macro_rules! impl_mul {
     )*)
 }
 
-// macro_rules! create_cuint {
-//     ($name:ident, $size:expr, $limb_type:ident) => {
-//         #[derive(Debug, PartialEq, Eq, Clone, Default)]
-//         pub struct $name {
-//             digits: [$limb_type; $size],
-//         }
-//     };
-// }
+// ============== TODO: stack allocated cuint ===============
+
+#[macro_export]
+macro_rules! create_cuint {
+    ($name:ident, $size:expr, $limb_type:ident) => {
+        #[derive(Clone, Copy)]
+        pub struct $name {
+            pub(crate) digits: [$limb_type; $size],
+        }
+        impl Default for $name {
+            fn default() -> Self {
+                Self {
+                    digits: [0 as $limb_type; $size],
+                }
+            }
+        }
+    };
+}
