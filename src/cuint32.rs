@@ -13,7 +13,7 @@
 //!
 
 use std::cmp::min;
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Rem};
 use std::str::FromStr;
 
 use base::*;
@@ -89,7 +89,7 @@ impl UintTrait for Uint<u32> {
     ///     let b = Uint::<u32>::from_str("0x456");
     ///     let c = a.add_cuint32(&b);
     /// ```
-    fn add_uint(&self, other: &Self) -> Self {
+    fn add_(&self, other: &Self) -> Self {
         let res = add_generic(&self.digits, &other.digits);
         Self { digits: res }
     }
@@ -103,19 +103,39 @@ impl UintTrait for Uint<u32> {
     ///     let b = Uint::add_generic(a: &[u32], b: &[u32])<u32>::from_str("0x456");
     ///     let c = a.mul_cuint32(&b);
     /// ```
-    fn mul_uint(&self, other: &Self) -> Self {
+    fn mul_(&self, other: &Self) -> Self {
         let res = mul_generic(&self.digits, &other.digits);
         Self { digits: res }
     }
 
-    // FIXME: implement mod_pow
-    fn mod_pow(&self, exp: &Self, modulus: &Self) -> Self {
-        unimplemented!();
+    // FIXME: implement
+    fn pow(&self, modulus: u64) -> Self {
+        let res = pow_generic(&self.digits, modulus);
+        Self { digits: res }
     }
 
-    // FIXME: implement mul_pow
-    fn mod_mul(&self, other: &Self, modulus: &Self) -> Self {
-        unimplemented!();
+    // FIXME: implement
+    fn pow_mod_(&self, exp: &Self, modulus: &Self) -> Self {
+        let res = pow_mod_generic(&self.digits, &exp.digits, &modulus.digits);
+        Self { digits: res }
+    }
+
+    // FIXME: implement
+    fn mul_mod_(&self, other: &Self, modulus: &Self) -> Self {
+        let res = mul_mod_generic(&self.digits, &other.digits, &modulus.digits);
+        Self { digits: res }
+    }
+
+    // FIXME: implement
+    fn add_mod_(&self, other: &Self, modulus: &Self) -> Self {
+        let res = add_mod_generic(&self.digits, &other.digits, &modulus.digits);
+        Self { digits: res }
+    }
+
+    // FIXME: implement
+    fn mod_(&self, modulus: &Self) -> Self {
+        let res = mod_generic(&self.digits, &modulus.digits);
+        Self { digits: res }
     }
 
     /// Clear a Uint<u32>, i.e. this Uint<u32> == 0 after this operation.
@@ -126,6 +146,7 @@ impl UintTrait for Uint<u32> {
 
 impl_add!(Uint<u32>);
 impl_mul!(Uint<u32>);
+impl_mod!(Uint<u32>);
 
 // ===================== ALGORITHMS ===========================
 
@@ -200,4 +221,29 @@ fn mul_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
 
     // TODO: trim output vector (remove zeroes we don't need).
     res
+}
+
+/// Return `a % b`
+fn mod_generic(a: &[u32], b: &[u32]) -> Vec<u32> {
+    unimplemented!();
+}
+
+/// Return `(a + b) % c`
+fn add_mod_generic(a: &[u32], b: &[u32], c: &[u32]) -> Vec<u32> {
+    unimplemented!();
+}
+
+/// Return `(a * b) % c`
+fn mul_mod_generic(a: &[u32], b: &[u32], c: &[u32]) -> Vec<u32> {
+    unimplemented!();
+}
+
+/// Return `(a ^ b) % c`
+fn pow_mod_generic(a: &[u32], b: &[u32], c: &[u32]) -> Vec<u32> {
+    unimplemented!();
+}
+
+/// Return `a ^ b`
+fn pow_generic(a: &[u32], b: u64) -> Vec<u32> {
+    unimplemented!();
 }

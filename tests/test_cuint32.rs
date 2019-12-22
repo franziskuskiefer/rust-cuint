@@ -5,7 +5,7 @@ extern crate rand;
 use rand::{thread_rng, Rng};
 use std::str::FromStr;
 // Trait with all the functions.
-use cuint::base::{Array, CUint, Uint, UintTrait};
+use cuint::base::{Uint, UintTrait};
 
 #[allow(dead_code)]
 fn random_hex_string(len: usize) -> String {

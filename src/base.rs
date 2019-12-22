@@ -1,4 +1,3 @@
-use std::ops::*;
 use std::str::FromStr;
 
 /// Uint errors
@@ -22,10 +21,13 @@ pub trait UintTrait: Default + PartialEq + Eq + Clone + FromStr {
     fn encode(&mut self, s: &str) -> Result<&Self, UintError>;
     fn decode(&self) -> Result<String, UintError>;
 
-    fn add_uint(&self, other: &Self) -> Self;
-    fn mul_uint(&self, other: &Self) -> Self;
-    fn mod_pow(&self, exp: &Self, modulus: &Self) -> Self;
-    fn mod_mul(&self, other: &Self, modulus: &Self) -> Self;
+    fn add_(&self, other: &Self) -> Self;
+    fn mul_(&self, other: &Self) -> Self;
+    fn mod_(&self, modulus: &Self) -> Self;
+    fn pow(&self, modulus: u64) -> Self;
+    fn pow_mod_(&self, exp: &Self, modulus: &Self) -> Self;
+    fn mul_mod_(&self, other: &Self, modulus: &Self) -> Self;
+    fn add_mod_(&self, other: &Self, modulus: &Self) -> Self;
 
     // TODO: return error?
     fn to_str(&self) -> String {
@@ -48,7 +50,7 @@ macro_rules! impl_add {
 
             #[inline]
             fn add(self, other: $t) -> $t {
-                self.add_uint(&other)
+                self.add_(&other)
             }
         }
 
@@ -57,7 +59,7 @@ macro_rules! impl_add {
 
             #[inline]
             fn add(self, other: &$t) -> $t {
-                self.add_uint(other)
+                self.add_(other)
             }
         }
 
@@ -66,7 +68,7 @@ macro_rules! impl_add {
 
             #[inline]
             fn add(self, other: &$t) -> $t {
-                self.add_uint(other)
+                self.add_(other)
             }
         }
     )*)
@@ -84,7 +86,7 @@ macro_rules! impl_mul {
 
             #[inline]
             fn mul(self, other: $t) -> $t {
-                self.mul_uint(&other)
+                self.mul_(&other)
             }
         }
 
@@ -93,7 +95,7 @@ macro_rules! impl_mul {
 
             #[inline]
             fn mul(self, other: &$t) -> $t {
-                self.mul_uint(other)
+                self.mul_(other)
             }
         }
 
@@ -102,7 +104,43 @@ macro_rules! impl_mul {
 
             #[inline]
             fn mul(self, other: &$t) -> $t {
-                self.mul_uint(other)
+                self.mul_(other)
+            }
+        }
+    )*)
+}
+
+// ===================== Implement % ===========================
+// let c = &a % &b;
+// let c = a % &b;
+// let c = a % b;
+#[macro_export]
+macro_rules! impl_mod {
+    ($($t:ty)*) => ($(
+        impl Rem<$t> for $t {
+            type Output = $t;
+
+            #[inline]
+            fn rem(self, modulus: $t) -> $t {
+                self.mod_(&modulus)
+            }
+        }
+
+        impl<'a> Rem<&'a $t> for $t {
+            type Output = $t;
+
+            #[inline]
+            fn rem(self, modulus: &$t) -> $t {
+                self.mod_(modulus)
+            }
+        }
+
+        impl<'a, 'b> Rem<&'b $t> for &'a $t {
+            type Output = $t;
+
+            #[inline]
+            fn rem(self, modulus: &$t) -> $t {
+                self.mod_(modulus)
             }
         }
     )*)
